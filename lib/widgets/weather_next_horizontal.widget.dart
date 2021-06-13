@@ -17,6 +17,7 @@ class WeatherNextHorizontal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final _screenSize = MediaQuery.of(context).size;
+    // TODO: Paginación
     // _pageCtrl.addListener(() {
     //   if (_pageCtrl.position.pixels >=
     //       _pageCtrl.position.maxScrollExtent - 200) {
@@ -39,7 +40,6 @@ class WeatherNextHorizontal extends StatelessWidget {
     nextWeather.id = UniqueKey().toString();
 
     return Container(
-      // margin: EdgeInsets.only(right: 15.0),
       child: Column(
         children: <Widget>[
           Hero(
