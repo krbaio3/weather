@@ -6,13 +6,13 @@ import 'package:weather/service/weather.service.dart';
 class WeatherNextHorizontal extends StatelessWidget {
   final WeatherNext weatherNext;
 
-  // Implementar la paginacion
+  // TODO: Implementar la paginacion
   // final _pageCtrl = PageController(initialPage: 1, viewportFraction: 0.3);
   //
   // final Function nextPage;
 
-  WeatherNextHorizontal({Key? key, required this.weatherNext}) : super(key: key);
-
+  WeatherNextHorizontal({Key? key, required this.weatherNext})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -36,39 +36,50 @@ class WeatherNextHorizontal extends StatelessWidget {
   }
 
   Widget _card(BuildContext context, ListElement nextWeather) {
-
     nextWeather.id = UniqueKey().toString();
 
     return Container(
-      margin: EdgeInsets.only(right: 15.0),
+      // margin: EdgeInsets.only(right: 15.0),
       child: Column(
         children: <Widget>[
           Hero(
             tag: nextWeather.id.toString(),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(20.0),
+              // borderRadius: BorderRadius.circular(20.0),
               child: FadeInImage(
                 placeholder: AssetImage('assets/loading.gif'),
-                image: NetworkImage('https://openweathermap.org/img/wn/${nextWeather.weather![0].icon}@2x.png'),
+                image: NetworkImage(
+                    'https://openweathermap.org/img/wn/${nextWeather.weather![0].icon}@2x.png'),
                 fit: BoxFit.contain,
                 height: 120.0,
               ),
             ),
           ),
+          Text(_setWeekDay(nextWeather.dt!),
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: Colors.teal[200], fontSize: 15.0)),
           SizedBox(
             height: 5.0,
           ),
-          Text(
-            _setWeekDay(nextWeather.dt!),
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.caption,
-          ),
-          Text('${nextWeather.main!.tempMax!.toStringAsFixed(0)}°  ${nextWeather.main!.tempMin!.toStringAsFixed(0)}°')
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('${nextWeather.main!.tempMax!.toStringAsFixed(0)}°',
+                  style: TextStyle(color: Colors.white60)),
+              SizedBox(
+                width: 5.0,
+              ),
+              Text(
+                '${nextWeather.main!.tempMin!.toStringAsFixed(0)}°',
+                style: TextStyle(color: Colors.white38),
+              ),
+            ],
+          )
         ],
       ),
     );
 
-    // Implementar pantalla de detalle tiempo Next Week
+    // TODO : Implementar pantalla de detalle tiempo Next Week
     // return GestureDetector(
     //   onTap: () => Navigator.pushNamed(context, 'detail', arguments: {}),
     //   child: card,
@@ -76,9 +87,17 @@ class WeatherNextHorizontal extends StatelessWidget {
   }
 }
 
-String _setWeekDay(int dt) =>
-    WeekDay.values[(DateTime.fromMillisecondsSinceEpoch(dt * 1000).toLocal().weekday - 1)].toString().split('.')[1];
+String _setWeekDay(int dt) => WeekDay.values[
+        (DateTime.fromMillisecondsSinceEpoch(dt * 1000).toLocal().weekday - 1)]
+    .toString()
+    .split('.')[1];
 
 enum WeekDay {
-  Lunes, Martes, Miercoles, Jueves, Viernes, Sabado, Domingo,
+  Lunes,
+  Martes,
+  Miercoles,
+  Jueves,
+  Viernes,
+  Sabado,
+  Domingo,
 }
