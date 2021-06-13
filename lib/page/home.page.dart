@@ -1,11 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:weather/bloc/bloc.provider.dart';
+import 'package:weather/models/weather.model.dart';
+import 'package:weather/service/weather.service.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   // const HomePage({Key key}) : super(key: key);
 
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+
+  bool isLoaded = false;
+  late WeatherBloc _weatherBloc;
 
   @override
   Widget build(BuildContext context) {
+
+    this._weatherBloc = BlocProvider.weatherBloc(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Weather'),
@@ -14,11 +28,12 @@ class HomePage extends StatelessWidget {
           IconButton(icon: Icon(Icons.search), onPressed: _onPressedSearch)
         ],
       ),
+      backgroundColor: Color.fromRGBO(15, 30, 55, 1),
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
-            _realTime(),
+            _realTimeData(context),
             Divider(
               color: Colors.black,
               indent: 10.0,
@@ -35,46 +50,95 @@ class HomePage extends StatelessWidget {
     print('Press me!');
   }
 
-  Widget _realTime() {
+  Widget _realTime(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _realTimeData(),
-        _realTimeIcon()
+          SizedBox(width: 20.0,),
+          Expanded( flex: 1 ,child: _weatherContent()),
+          SizedBox(width: 20.0,),
+          Expanded(flex: 1, child: _realTimeIcon(context, this._weatherBloc.weather.weather![0].icon!)),
+          SizedBox(width: 20.0,),
       ],
     );
   }
 
-  Widget _realTimeData() {
-    return Column(
+  Widget _realTimeData(BuildContext context) {
 
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('18'),
-        Text('Madrid | Barcelona'),
-        Text('Hoy'),
-        Row(children: [
-          Text('20'),
-          Text('17'),
-          Text('Humidity: 48')
-        ],)
+    if(this.isLoaded){
+      return _realTime(context);
+    }
 
-      ],
+    return FutureBuilder<Weather?>(
+      future: WeatherService().getWeatherData(),
+      builder: (BuildContext context, AsyncSnapshot<Weather?> snapshot) {
+        switch (snapshot.connectionState) {
+          case ConnectionState.none:
+          case ConnectionState.waiting:
+          case ConnectionState.active:
+            return Center(child: CircularProgressIndicator(valueColor: new AlwaysStoppedAnimation<Color>(Colors.blueAccent)));
+          case ConnectionState.done:
+            break;
+        }
+
+        this.isLoaded = true;
+
+        if(!snapshot.hasData) {
+          return Text('No hay datos');
+        }
+
+        final data = snapshot.data!;
+
+        _weatherBloc.changeWeather(data);
+
+        return _realTime(context);
+
+      },
+      // child: Container(
+      //   margin: EdgeInsets.only(top: 15.0),
+      //   child:
+      //       StreamBuilder(
+      //           stream: weatherProvider.weatherStream,
+      //           builder: (BuildContext ctx, AsyncSnapshot<Weather> snapshot) {
+      //
+      //             return Center(child: CircularProgressIndicator());
+      //           }),
+        // ),
     );
   }
 
-  Widget _realTimeIcon() {
-    return Column(children: [Icon(Icons.wb_sunny)],);
+  Widget _realTimeIcon(BuildContext context, String icon) {
+
+    return Container(
+      // color: Colors.amber,
+      // mainAxisAlignment: MainAxisAlignment.center,
+      alignment: Alignment.centerRight,
+      height: 150.0,
+      child:
+        // FutureBuilder(
+        //     future: WeatherService().getIconWeatherData(icon),
+        //     builder: (BuildContext ctx, AsyncSnapshot<String> snapshot) {
+        //       if(snapshot.hasData) {
+        //         return Icon(Icons.wb_sunny);
+        //       }
+        //       return Center(child: CircularProgressIndicator());
+        //     })
+          Image(
+              // loadingBuilder: (context, child, loadingProgress) => CircularProgressIndicator(),
+              image: NetworkImage(WeatherService().getIconWeatherData(icon)),
+              height: 150.0,
+            fit: BoxFit.fitHeight,
+            width: 100.0,
+          ),
+
+    );
   }
 
   Widget _nextTime() {
     return Row(
       children: [
-
             _nextTimeData()
           ],
-
     );
   }
 
@@ -91,5 +155,45 @@ class HomePage extends StatelessWidget {
     );
   }
 
+  Widget _weatherContent() {
+
+    final data = _weatherBloc.weather;
+
+    return Container(
+      margin: EdgeInsets.only(top: 15.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text('${data.main!.temp!.toStringAsFixed(0)}°'),
+          Text(data.name!),
+          Text(_setDay(data.dt!)),
+          Text(
+              '${data.main!.tempMax!.toStringAsFixed(0)}°  ${data.main!.tempMin!.toStringAsFixed(0)}° Humidity: ${data.main!.humidity!.toStringAsFixed(0)}'
+      )
+        ],
+      ),
+    );
+  }
+}
+
+String _setDay(int dt) {
+
+  // time local
+  final String today = DateTime.now().day.toString();
+
+  // var dateTime = DateTime.now();
+  // var dateTimeUTC = DateTime.now().toUtc();
+
+  // var result = (dateTime.millisecondsSinceEpoch - dateTimeUTC.millisecondsSinceEpoch);
+  // dif en milisegundos
+  // print(result);
+
+
+  // time in UTC
+  // final String getDayWeather = DateTime.fromMillisecondsSinceEpoch(dt * 1000).toLocal().day.toString();
+  final String getDayWeather = DateTime.fromMillisecondsSinceEpoch(dt * 1000).toLocal().day.toString();
+
+  return (today == getDayWeather) ? 'Hoy' : getDayWeather;
 }
 
