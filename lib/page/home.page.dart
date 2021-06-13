@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:weather/bloc/bloc.provider.dart';
+import 'package:weather/models/weather_next.model.dart';
 import 'package:weather/models/weather.model.dart';
 import 'package:weather/service/weather.service.dart';
+import 'package:weather/widgets/weather_next_horizontal.widget.dart';
 
 class HomePage extends StatefulWidget {
   // const HomePage({Key key}) : super(key: key);
@@ -13,7 +15,9 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
 
   bool isLoaded = false;
+  bool isLoadedNext = false;
   late WeatherBloc _weatherBloc;
+
 
   @override
   Widget build(BuildContext context) {
@@ -35,11 +39,11 @@ class _HomePageState extends State<HomePage> {
           children: <Widget>[
             _realTimeData(context),
             Divider(
-              color: Colors.black,
+              color: Colors.white60,
               indent: 10.0,
               endIndent: 10.0,
             ),
-            _nextTime()
+            _nextTimeData()
           ],
         ),
       )
@@ -94,35 +98,15 @@ class _HomePageState extends State<HomePage> {
         return _realTime(context);
 
       },
-      // child: Container(
-      //   margin: EdgeInsets.only(top: 15.0),
-      //   child:
-      //       StreamBuilder(
-      //           stream: weatherProvider.weatherStream,
-      //           builder: (BuildContext ctx, AsyncSnapshot<Weather> snapshot) {
-      //
-      //             return Center(child: CircularProgressIndicator());
-      //           }),
-        // ),
     );
   }
 
   Widget _realTimeIcon(BuildContext context, String icon) {
 
     return Container(
-      // color: Colors.amber,
-      // mainAxisAlignment: MainAxisAlignment.center,
       alignment: Alignment.centerRight,
       height: 150.0,
       child:
-        // FutureBuilder(
-        //     future: WeatherService().getIconWeatherData(icon),
-        //     builder: (BuildContext ctx, AsyncSnapshot<String> snapshot) {
-        //       if(snapshot.hasData) {
-        //         return Icon(Icons.wb_sunny);
-        //       }
-        //       return Center(child: CircularProgressIndicator());
-        //     })
           Image(
               // loadingBuilder: (context, child, loadingProgress) => CircularProgressIndicator(),
               image: NetworkImage(WeatherService().getIconWeatherData(icon)),
@@ -134,24 +118,36 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _nextTime() {
-    return Row(
-      children: [
-            _nextTimeData()
-          ],
-    );
-  }
-
   Widget _nextTimeData() {
-    return Column(
-      children: [
-        Icon(Icons.wb_sunny),
-        Text('Viernes'),
-        Row(
-          children: [Text('25'), Text('26')],
-        )
 
-      ],
+    if(this.isLoadedNext){
+      return WeatherNextHorizontal(weatherNext: this._weatherBloc.weatherNext);
+    }
+
+    return FutureBuilder<WeatherNext?>(
+      future: WeatherService().getNextWeatherData(),
+      builder: (BuildContext context, AsyncSnapshot<WeatherNext?> snapshot) {
+        switch (snapshot.connectionState) {
+          case ConnectionState.none:
+          case ConnectionState.waiting:
+          case ConnectionState.active:
+            return Center(child: CircularProgressIndicator(valueColor: new AlwaysStoppedAnimation<Color>(Colors.white60)));
+          case ConnectionState.done:
+            break;
+        }
+
+        this.isLoadedNext = true;
+
+        if(!snapshot.hasData) {
+          return Text('No hay datos');
+        }
+
+        final data = snapshot.data!;
+
+        _weatherBloc.changeNextWeather(data);
+
+        return WeatherNextHorizontal(weatherNext: this._weatherBloc.weatherNext);
+      },
     );
   }
 
@@ -167,14 +163,31 @@ class _HomePageState extends State<HomePage> {
         children: <Widget>[
           Text('${data.main!.temp!.toStringAsFixed(0)}°'),
           Text(data.name!),
-          Text(_setDay(data.dt!)),
-          Text(
-              '${data.main!.tempMax!.toStringAsFixed(0)}°  ${data.main!.tempMin!.toStringAsFixed(0)}° Humidity: ${data.main!.humidity!.toStringAsFixed(0)}'
-      )
+          Text(_setDay(data.dt!), style: TextStyle(color: Colors.white70),),
+          SizedBox(height: 10.0,),
+          Row(
+            children: [
+              Text(
+                  '${data.main!.tempMax!.toStringAsFixed(0)}°',
+                style: TextStyle(color: Colors.white60),
+              ),
+              SizedBox(width: 3.0),
+              Text(
+                  ' ${data.main!.tempMin!.toStringAsFixed(0)}°',
+                style: TextStyle(color: Colors.white38),
+              ),
+              SizedBox(width: 3.0),
+              Text(
+                  'Humidity: ${data.main!.humidity!.toStringAsFixed(0)}',
+                style: TextStyle(color: Colors.blue[300]),
+              ),
+            ],
+          )
         ],
       ),
     );
   }
+
 }
 
 String _setDay(int dt) {
@@ -182,16 +195,7 @@ String _setDay(int dt) {
   // time local
   final String today = DateTime.now().day.toString();
 
-  // var dateTime = DateTime.now();
-  // var dateTimeUTC = DateTime.now().toUtc();
-
-  // var result = (dateTime.millisecondsSinceEpoch - dateTimeUTC.millisecondsSinceEpoch);
-  // dif en milisegundos
-  // print(result);
-
-
   // time in UTC
-  // final String getDayWeather = DateTime.fromMillisecondsSinceEpoch(dt * 1000).toLocal().day.toString();
   final String getDayWeather = DateTime.fromMillisecondsSinceEpoch(dt * 1000).toLocal().day.toString();
 
   return (today == getDayWeather) ? 'Hoy' : getDayWeather;
