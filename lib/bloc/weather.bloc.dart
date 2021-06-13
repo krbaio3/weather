@@ -3,7 +3,6 @@ import 'package:weather/models/weather_next.model.dart';
 import 'package:weather/models/weather.model.dart';
 
 class WeatherBloc {
-
   final _weatherCtrl = BehaviorSubject<Weather>();
   final _weatherNextCtrl = BehaviorSubject<WeatherNext>();
 
@@ -16,7 +15,7 @@ class WeatherBloc {
   Weather get weather => _weatherCtrl.value;
   WeatherNext get weatherNext => _weatherNextCtrl.value;
 
-  void dispose(){
+  void dispose() {
     _weatherCtrl.close();
     _weatherNextCtrl.close();
   }
